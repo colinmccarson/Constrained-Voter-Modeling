@@ -1,6 +1,7 @@
 import numpy as np
 import random
 
+
 class Model:
     def __init__(self, initial_left, initial_right, initial_center, birth_chance, death_chance, iterations):
         self.left = initial_left  # 0
@@ -15,6 +16,7 @@ class Model:
         self.iterations = iterations
 
     def get_probability(self, i, j):
+        # Probability of selecting the individual pair i,j
         n = [self.left, self.right, self.center]  # convenience
         if (i == j):
             return (n[i] * (n[j] - 1)) / (self.total * (self.total - 1))
@@ -49,34 +51,34 @@ class Model:
             self.center -= 1
             self.right += 1
 
-    def transition(self):
-        dist = []
+    def persuasive_collision(self):
+        # Transition the model by one persuasive act
+        prob_dens = []  # probability density function
         for i in range(3):
             for j in range(3):
-                dist.append(self.get_probability(i, j))
+                prob_dens.append(self.get_probability(i, j))
         value = random.uniform(0, 1)
-        sum = 0
+        cum_sum = 0
         for i in range(3):
             for j in range(3):
-                sum += dist[3 * i + j]
-                if value <= sum:
+                cum_sum += prob_dens[3 * i + j]
+                if value <= cum_sum:
                     # print(str(i) + " " + str(j))
                     self.change_mind(i, j)
-                    self.updateValues()
+                    self.update_values()
                     return
         self.change_mind(2, 2)  # does nothing
-        self.updateValues()
-        # print("nothin")
+        self.update_values()
 
     def equilibrium(self):
-        if (self.center == 0):
-            return True
-        elif (self.left == self.total or self.right == self.total or self.center == self.total):
+        if self.center == 0:
+            return self.birth_rate - self.death_rate == 0  # Not equilibrium unless net growth is zero
+        elif self.left == self.total or self.right == self.total or self.center == self.total:
             return True
         else:
             return False
 
-    def updateValues(self):
+    def update_values(self):
         self.total = self.center + self.left + self.right
         self.leftDens = self.left / self.total
         self.centerDens = self.center / self.total
@@ -89,60 +91,58 @@ class Model:
             self.right += 1
         elif i == 2:
             self.center += 1
-        self.updateValues()
+        self.update_values()
 
     def birth_singular(self):
+        # Determine whether a birth occurs. If one does, compute the probability that given species has birth given
+        # that birth occurs.
         value = random.uniform(0, 1)
-        probs = [self.birth_rate * self.leftDens, self.birth_rate * self.rightDens, self.birth_rate * self.centerDens]
+        probabilities = [self.birth_rate * self.leftDens, self.birth_rate * self.rightDens,
+                         self.birth_rate * self.centerDens]
         norm = 0
-        for i in probs:
+        for i in probabilities:
             norm += i
         for i in range(3):
-            probs[i] = probs[i] / norm
+            probabilities[i] = probabilities[i] / norm
         for i in range(3):
-            if value <= probs[i]:
+            if value <= probabilities[i]:
                 self.add_to_species(i)
-                self.updateValues()
+                self.update_values()
                 return
         self.add_to_species(2)
-        self.updateValues()
+        self.update_values()
 
     def birth(self):
         value = random.uniform(0, 1)
-        probs = [self.birth_rate * self.leftDens, self.birth_rate * self.rightDens, self.birth_rate * self.centerDens]
+        probabilities = [self.birth_rate * self.leftDens, self.birth_rate * self.rightDens, self.birth_rate * self.centerDens]
         s = []
-        sum = 0
-        for i in probs:
-            sum += i
-            s.append(sum)
+        cum_sum = 0
+        for i in probabilities:
+            cum_sum += i
+            s.append(cum_sum)
         for i in range(3):
             if value <= s[i]:
                 self.add_to_species(i)
-                self.updateValues()
+                self.update_values()
                 return
 
     def birth_multiple(self):
-        probs = [self.birth_rate * self.leftDens, self.birth_rate * self.rightDens, self.birth_rate * self.centerDens]
+        # uniform randomly determine whether a species produces a child. More than one species may produce a child.
+        probabilities = [self.birth_rate * self.leftDens, self.birth_rate * self.rightDens, self.birth_rate * self.centerDens]
         rands = [random.uniform(0, 1), random.uniform(0, 1), random.uniform(0, 1)]
-        if rands[0] <= probs[0]:
-            self.left += 1
-        if rands[1] <= probs[1]:
-            self.right += 1
-        if rands[2] <= probs[2]:
-            self.center += 1
-        self.updateValues()
 
-    def simulate(self):
-        count = 0
-        while not self.equilibrium():
-            self.transition()
-            count += 1
-        return count
+        if rands[0] <= probabilities[0]:
+            self.left += 1
+        if rands[1] <= probabilities[1]:
+            self.right += 1
+        if rands[2] <= probabilities[2]:
+            self.center += 1
+        self.update_values()
 
     def simulate_birth_multiple(self):
         count = 0
         while (not self.equilibrium()) and (count < self.iterations):
-            self.transition()
+            self.persuasive_collision()
             self.birth_multiple()
             count += 1
         return count
@@ -150,28 +150,17 @@ class Model:
     def simulate_birth(self):
         count = 0
         while (not self.equilibrium()) and (count < self.iterations):
-            self.transition()
+            self.persuasive_collision()
             self.birth()
             count += 1
         return count
-
-    def verify_dist(self):
-        dist = []
-        for i in range(3):
-            for j in range(3):
-                dist.append(self.get_probability(i, j))
-        sum = 0.0
-        for i in dist:
-            sum += i
-        print(sum)
-        print(dist)
 
     def random_walk(self, modulus):
         """Return a 3D random walk as (num_steps, 3) array."""
         start_pos = np.array([self.leftDens, self.rightDens, self.centerDens])
         steparr = [start_pos]
         for i in range(self.iterations):
-            self.transition()
+            self.persuasive_collision()
             self.birth()
             if i % modulus == 0:
                 steparr.append((self.leftDens, self.rightDens, self.centerDens))

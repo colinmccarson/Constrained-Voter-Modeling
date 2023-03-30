@@ -5,6 +5,7 @@ import random
 
 import model
 
+
 def update_3dlines(num, walks, lines):
     for line, walk in zip(lines, walks):
         # NOTE: there is no .set_data() for 3 dim data...
@@ -12,14 +13,21 @@ def update_3dlines(num, walks, lines):
         line.set_3d_properties(walk[:num, 2])
     return lines
 
+
 def update_2dlines(num, walks, lines):
     for line, walk in zip(lines, walks):
         # NOTE: there is no .set_data() for 3 dim data...
         line.set_data(walk[:num, :2].T)
     return lines
 
-def animate(iterations=10000, modulus=50, how_many=8, random_init_cond=True):
-    walks = [model.Model(random.randint(10, 100), random.randint(10, 100), random.randint(10, 100), 0, 0, iterations).random_walk(50) for _ in range(8)]
+
+def animate(iterations=10000, modulus=50, how_many=8, birth_rate=0, death_rate=0, init_cond=None):
+    if init_cond is None:
+        walks = [model.Model(random.randint(10, 100), random.randint(10, 100), random.randint(10, 100), birth_rate,
+                             death_rate, iterations).random_walk(modulus) for _ in range(how_many)]
+    else:
+        walks = [model.Model(init_cond[0], init_cond[1], init_cond[2], birth_rate, death_rate,
+                             iterations).random_walk(modulus) for _ in range(how_many)]
 
     fig = plt.figure()
 
@@ -32,12 +40,12 @@ def animate(iterations=10000, modulus=50, how_many=8, random_init_cond=True):
 
     # Create lines initially without data
     lines = [ax.plot([], [], [])[0] for _ in walks]
-    lines.append(ax.plot(np.linspace(0, 1), 1-np.linspace(0, 1), [0 for _ in np.linspace(0, 1)]))
-    lines.append(ax.plot(np.linspace(0, 1), [0 for _ in np.linspace(0, 1)], 1-np.linspace(0, 1)))
-    lines.append(ax.plot([0 for _ in np.linspace(0, 1)], np.linspace(0, 1), 1-np.linspace(0, 1)))
+    lines.append(ax.plot(np.linspace(0, 1), 1 - np.linspace(0, 1), [0 for _ in np.linspace(0, 1)]))
+    lines.append(ax.plot(np.linspace(0, 1), [0 for _ in np.linspace(0, 1)], 1 - np.linspace(0, 1)))
+    lines.append(ax.plot([0 for _ in np.linspace(0, 1)], np.linspace(0, 1), 1 - np.linspace(0, 1)))
 
     lines2d = [ax2d.plot([], [])[0] for _ in walks]
-    lines2d.append(ax2d.plot(np.linspace(0, 1), 1-np.linspace(0, 1)))
+    lines2d.append(ax2d.plot(np.linspace(0, 1), 1 - np.linspace(0, 1)))
 
     # Setting the axes properties
     ax.set(xlim3d=(0, 1), xlabel='X')
