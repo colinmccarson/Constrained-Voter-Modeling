@@ -93,7 +93,16 @@ class Model:
             self.center += 1
         self.update_values()
 
-    def birth_singular(self):
+    def remove_from_species(self, i):
+        if i == 0 and self.left > 0:
+            self.left -= 1
+        elif i == 1 and self.right > 0:
+            self.right -= 1
+        elif i == 2 and self.center > 0:
+            self.center -= 1
+        self.update_values()
+
+    def birth_given_occurs(self):
         # Determine whether a birth occurs. If one does, compute the probability that given species has birth given
         # that birth occurs.
         value = random.uniform(0, 1)
@@ -110,9 +119,9 @@ class Model:
                 self.update_values()
                 return
         self.add_to_species(2)
-        self.update_values()
 
     def birth(self):
+        # Randomly select a species to birth into, or none at all
         value = random.uniform(0, 1)
         probabilities = [self.birth_rate * self.leftDens, self.birth_rate * self.rightDens, self.birth_rate * self.centerDens]
         s = []
@@ -123,7 +132,20 @@ class Model:
         for i in range(3):
             if value <= s[i]:
                 self.add_to_species(i)
-                self.update_values()
+                return
+
+    def death(self):
+        # Randomly select a species to subtract from, or none at all
+        value = random.uniform(0, 1)
+        probabilities = [self.death_rate * self.leftDens, self.death_rate * self.rightDens, self.death_rate * self.centerDens]
+        s = []
+        cum_sum = 0
+        for i in probabilities:
+            cum_sum += i
+            s.append(cum_sum)
+        for i in range(3):
+            if value <= s[i]:
+                self.remove_from_species(i)
                 return
 
     def birth_multiple(self):
@@ -161,7 +183,10 @@ class Model:
         steparr = [start_pos]
         for i in range(self.iterations):
             self.persuasive_collision()
-            self.birth()
+            if(self.birth_rate > 0):
+                self.birth()
+            if(self.death_rate > 0):
+                self.death()
             if i % modulus == 0:
                 steparr.append((self.leftDens, self.rightDens, self.centerDens))
         steps = np.array(steparr)
