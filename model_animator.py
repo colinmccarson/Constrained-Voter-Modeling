@@ -24,10 +24,10 @@ def update_2dlines(num, walks, lines):
 def animate(iterations=10000, modulus=50, how_many=8, birth_rate=0, death_rate=0, init_cond=None):
     if init_cond is None:
         walks = [model.Model(random.randint(10, 100), random.randint(10, 100), random.randint(10, 100), birth_rate,
-                             death_rate, iterations).random_walk(modulus) for _ in range(how_many)]
+                             death_rate, iterations, modulus).random_walk() for _ in range(how_many)]
     else:
         walks = [model.Model(init_cond[0], init_cond[1], init_cond[2], birth_rate, death_rate,
-                             iterations).random_walk(modulus) for _ in range(how_many)]
+                             iterations, modulus).random_walk() for _ in range(how_many)]
 
     fig = plt.figure()
 

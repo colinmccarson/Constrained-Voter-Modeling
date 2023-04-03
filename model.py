@@ -3,7 +3,7 @@ import random
 
 
 class Model:
-    def __init__(self, initial_left, initial_right, initial_center, birth_chance, death_chance, iterations):
+    def __init__(self, initial_left, initial_right, initial_center, birth_chance, death_chance, iterations, modulus):
         self.left = initial_left  # 0
         self.right = initial_right  # 1
         self.center = initial_center  # 2
@@ -14,6 +14,7 @@ class Model:
         self.centerDens = self.center / self.total
         self.rightDens = self.right / self.total
         self.iterations = iterations
+        self.modulus = modulus
 
     def get_probability(self, i, j):
         # Probability of selecting the individual pair i,j
@@ -23,7 +24,7 @@ class Model:
         else:
             return (n[i] * n[j]) / (self.total * (self.total - 1))
 
-    def select_individual_pair(self, ):
+    def select_individual_pair(self):
         dist = []
         for i in range(3):
             for j in range(3):
@@ -36,6 +37,16 @@ class Model:
                 if value <= sum:
                     return i, j
         return 2, 2
+
+    def select_individual(self):
+        # Randomly select an individual of a species, using densities as bias
+        value = random.uniform(0, 1)
+        if value <= self.leftDens:
+            return 0
+        elif value <= self.leftDens + self.rightDens:
+            return 1
+        else:
+            return 2
 
     def change_mind(self, i, j):  # j changes mind of i
         if i == 0 and j == 2:
@@ -177,17 +188,21 @@ class Model:
             count += 1
         return count
 
-    def random_walk(self, modulus):
+    def transition(self):
+        self.persuasive_collision()
+        if self.birth_rate > 0:
+            self.birth()
+        if self.death_rate > 0:
+            self.death()
+        self.update_values() # TODO: Redundant?
+
+    def random_walk(self):
         """Return a 3D random walk as (num_steps, 3) array."""
         start_pos = np.array([self.leftDens, self.rightDens, self.centerDens])
         steparr = [start_pos]
         for i in range(self.iterations):
-            self.persuasive_collision()
-            if(self.birth_rate > 0):
-                self.birth()
-            if(self.death_rate > 0):
-                self.death()
-            if i % modulus == 0:
+            self.transition()
+            if i % self.modulus == 0:
                 steparr.append((self.leftDens, self.rightDens, self.centerDens))
         steps = np.array(steparr)
         # print(steps)

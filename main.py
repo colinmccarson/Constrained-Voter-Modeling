@@ -2,10 +2,10 @@
 import matplotlib
 import matplotlib.pyplot as plt
 
-import animator
+import model_animator
 
 matplotlib.use("TkAgg")
 
-ani, ani2d = animator.animate()
+ani, ani2d = model_animator.animate()
 
 plt.show()
